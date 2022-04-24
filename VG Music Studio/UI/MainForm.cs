@@ -491,7 +491,17 @@ namespace Kermalis.VGMusicStudio.UI
                 };
                 try
                 {
-                    p.SaveAsMIDI(d.FileName, args);
+                    // HACK: export all midis instead of just the one selected
+                    // change this i number to the name of tracks in your loaded game
+                    for (int i = 0; i < 507; i++)
+                    {
+                        p.LoadSong(i);
+                        if (p.MaxTicks > 0)
+                        {
+                            p.SaveAsMIDI(Directory.GetParent(d.FileName).FullName + "/song" + i.ToString().PadLeft(4, '0') + ".mid", args);
+                        }
+                    }
+                    // p.SaveAsMIDI(d.FileName, args);
                     FlexibleMessageBox.Show(string.Format(Strings.SuccessSaveMIDI, d.FileName), Text);
                 }
                 catch (Exception ex)
