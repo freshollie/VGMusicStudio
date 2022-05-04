@@ -261,8 +261,6 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                                 {
                                     if (!EventExists(offset))
                                     {
-                                        Debug.WriteLine(trackIndex.ToString());
-                                        Debug.WriteLine("Loaded first voice command");
                                         AddEvent(new VoiceCommand { Voice = cmd });
                                     }
                                     break;
@@ -271,9 +269,6 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                                 {
                                     if (!EventExists(offset))
                                     {
-                                        Debug.WriteLine(trackIndex.ToString());
-                                        Debug.WriteLine("Loaded first volume command");
-
                                         AddEvent(new VolumeCommand { Volume = cmd });
                                     }
                                     break;
@@ -471,8 +466,6 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                                     sbyte transpose = _config.Reader.ReadSByte();
                                     if (!EventExists(offset))
                                     {
-                                            Debug.WriteLine(trackIndex.ToString());
-                                            Debug.WriteLine("Loaded transpose command");
                                             AddEvent(new TransposeCommand { Transpose = transpose });
                                     }
                                     break;
@@ -483,8 +476,6 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                                     byte voice = _config.Reader.ReadByte();
                                     if (!EventExists(offset))
                                     {
-                                            Debug.WriteLine(trackIndex.ToString());
-                                            Debug.WriteLine("Loaded second voice command");
                                             AddEvent(new VoiceCommand { Voice = voice });
                                     }
                                     break;
@@ -494,8 +485,6 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                                     byte volume = _config.Reader.ReadByte();
                                     if (!EventExists(offset))
                                     {
-                                            Debug.WriteLine(trackIndex.ToString());
-                                            Debug.WriteLine("Loaded second volume command");
                                             AddEvent(new VolumeCommand { Volume = volume });
                                     }
                                     break;
@@ -666,7 +655,7 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
             if (args.ReverseVolume)
             {
                 baseVolume = Events.SelectMany(e => e).Where(e => e.Command is VolumeCommand).Select(e => ((VolumeCommand)e.Command).Volume).Max();
-                Debug.WriteLine($"Reversing volume back from {baseVolume}.");
+                Debug.WriteLine($"Reversing volume back from {fileName} {baseVolume}.");
             }
 
             using (var midi = new Sequence(24) { Format = 1 })
@@ -676,6 +665,7 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                 var ts = new TimeSignatureBuilder();
                 foreach ((int AbsoluteTick, (byte Numerator, byte Denominator)) e in args.TimeSignatures)
                 {
+                    Debug.WriteLine($"Setting TS {e.Item2.Numerator} {e.Item2.Denominator}.");
                     ts.Numerator = e.Item2.Numerator;
                     ts.Denominator = e.Item2.Denominator;
                     ts.ClocksPerMetronomeClick = 24;
@@ -857,44 +847,34 @@ namespace Kermalis.VGMusicStudio.Core.GBA.MP2K
                             }
                             case TransposeCommand keysh:
                             {
-                                    Debug.WriteLine("Some transpose command");
-                                    Debug.WriteLine(ticks);
                                     transpose = keysh.Transpose;
                                 break;
                             }
                             case TuneCommand tune:
                             {
-                                    if (trackIndex == 8)
-                                    {
-                                        Debug.WriteLine("Write tune command");
-                                        Debug.WriteLine(ticks);
-                                    }
                                     track.Insert(ticks, new ChannelMessage(ChannelCommand.Controller, trackIndex, 24, tune.Tune));
                                 break;
                             }
                             case VoiceCommand voice:
                             {
-                                if (trackIndex == 8)
-                                    {
-                                        Debug.WriteLine("Write voice command");
-                                        Debug.WriteLine(ticks);
-                                    }
                                 track.Insert(ticks, new ChannelMessage(ChannelCommand.ProgramChange, trackIndex, voice.Voice));
                                 break;
                             }
                             case VolumeCommand vol:
                             {
-                                    if (trackIndex == 8)
-                                    {
-                                        Debug.WriteLine("Write volume command");
-                                        Debug.WriteLine(ticks);
-                                    }
                                 double d = baseVolume / (double)0x7F;
                                 int volume = (int)(vol.Volume / d);
                                 // If there are rounding errors, fix them (happens if baseVolume is not 127 and baseVolume is not vol.Volume)
                                 if (volume * baseVolume / 0x7F == vol.Volume - 1)
                                 {
                                     volume++;
+                                }
+
+                                // Don't store the first volume command if it is the base volume
+                                if (volume * baseVolume / 0x7F == baseVolume && i == 0)
+                                {
+                                    Debug.WriteLine($"Not writing initial volume on track {trackIndex + 1}");
+                                    break;
                                 }
                                 track.Insert(ticks, new ChannelMessage(ChannelCommand.Controller, trackIndex, (int)ControllerType.Volume, volume));
                                 break;

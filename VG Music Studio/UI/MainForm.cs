@@ -483,7 +483,7 @@ namespace Kermalis.VGMusicStudio.UI
                 var args = new Core.GBA.MP2K.Player.MIDISaveArgs
                 {
                     SaveCommandsBeforeTranspose = true,
-                    ReverseVolume = false,
+                    ReverseVolume = true,
                     TimeSignatures = new List<(int AbsoluteTick, (byte Numerator, byte Denominator))>
                     {
                         (0, (4, 4))
@@ -492,7 +492,7 @@ namespace Kermalis.VGMusicStudio.UI
                 try
                 {
                     // HACK: export all midis instead of just the one selected
-                    // change this i number to the name of tracks in your loaded game
+                    // change this i number to the number of tracks + 1 in your loaded game
                     for (int i = 0; i < 507; i++)
                     {
                         p.LoadSong(i);
